@@ -1,123 +1,98 @@
-
-
 import pyautogui
 import time
 import pyperclip
-import json
 
-def leer_hologramas(path='holograma.json'):
-    """Lee los hologramas desde un archivo JSON escalable."""
-    try:
-        with open(path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-            if not isinstance(data, list):
-                raise ValueError("El archivo JSON debe contener una lista de objetos.")
-            return data
-    except FileNotFoundError:
-        print(f"Archivo {path} no encontrado.")
-        return []
-    except json.JSONDecodeError as e:
-        print(f"Error de formato en {path}: {e}")
-        return []
+# Propiedades por defecto
+PROPS_HOLO = {
+    'scale': "1.5",
+    'background': "transparent",
+    'textshadow': "true",
+    'billboard': "VERTICAL",
+    'rotatepitch': "0",
+    'visibility': "MANUAL"
+}
 
-
-def construir_comandos(holograma):
-    """
-    Construye los comandos de FancyHolograms usando un objeto holograma.
-    El objeto debe tener al menos 'nombre' y 'text'.
-    """
-    nombre = holograma.get('nombre')
-    texto = holograma.get('text')
-    lore = holograma.get('lore')
-    text2 = holograma.get('text2')
-    text3 = holograma.get('text3')
-    text4 = holograma.get('text4')
-    text5 = holograma.get('text5')
-    text6 = holograma.get('text6')
-    text7 = holograma.get('text7')
-    text8 = holograma.get('text8')
-    text9 = holograma.get('text9')
-    if not nombre or not texto:
-        raise ValueError("Cada holograma debe tener 'nombre' y 'text'.")
-    comandos = [
-        f"/hologram create text {nombre}",
-        f"/hologram edit {nombre} setline 1 {texto}",
-        f"/hologram edit {nombre} scale 1.5",
-        f"/hologram edit {nombre} background transparent",
-        f"/hologram edit {nombre} textshadow true",
-        f"/hologram edit {nombre} billboard VERTICAL",
-        f"/hologram edit {nombre} rotatepitch 0",
-        f"/hologram edit {nombre} visibility MANUAL",
-
-        #-- Separador visual entre dos hologramas
-        f"/hologram create text {lore}",
-
-        #-- Comandos para el segundo holograma
-        f"/hologram edit {lore} setline 1 {text2}",
-        f"/hologram edit {lore} addline {text3}",
-        f"/hologram edit {lore} addline {text4}",
-        f"/hologram edit {lore} addline {text5}",
-
-        #-- si necesitas más lineas en el holograma quita el comentario = #
-        #f"/hologram edit {lore} addline {text6}",
-        #f"/hologram edit {lore} addline {text7}",
-        #f"/hologram edit {lore} addline {text8}",
-        #f"/hologram edit {lore} addline {text9}",
-        
-
-        f"/hologram edit {lore} background transparent",
-        f"/hologram edit {lore} textshadow true",
-        f"/hologram edit {lore} billboard VERTICAL",
-        f"/hologram edit {lore} rotatepitch 0",
-        f"/hologram edit {lore} visibility MANUAL"
-    ]
-    return comandos
+PROPS_LORE = PROPS_HOLO.copy()
+PROPS_LORE['scale'] = "1"  # Scale diferente para el lore
 
 def enviar_comando(comando):
-    #"""Abre el chat, escribe el comando y presiona Enter."""
-    time.sleep(0.2)  # Pequeña pausa antes de abrir el chat
+    time.sleep(0.1)
     pyautogui.press('t')
-    time.sleep(0.4)  # Espera más para asegurar que el chat se abra
+    time.sleep(0.1)
+    pyautogui.press('backspace')
+    time.sleep(0.1)
     pyperclip.copy(comando)
     pyautogui.hotkey('ctrl', 'v')
-    time.sleep(0.3)  # Espera más para asegurar que el texto se pegue
+    time.sleep(0.1)
     pyautogui.press('enter')
-    time.sleep(0.4)  # Espera más para asegurar que el chat se cierre y el juego procese
+    time.sleep(0.1)
 
+def generar_comandos(nombre, lineas, props):
+    cmds = [f"/hologram create text {nombre}"]
+    cmds.append(f"/hologram edit {nombre} setline 1 {lineas[0]}")
+    for i, linea in enumerate(lineas[1:], start=2):
+        cmds.append(f"/hologram edit {nombre} addline {linea}")
+    cmds.append(f"/hologram edit {nombre} scale {props['scale']}")
+    cmds.append(f"/hologram edit {nombre} background {props['background']}")
+    cmds.append(f"/hologram edit {nombre} textshadow {props['textshadow']}")
+    cmds.append(f"/hologram edit {nombre} billboard {props['billboard']}")
+    cmds.append(f"/hologram edit {nombre} rotatepitch {props['rotatepitch']}")
+    cmds.append(f"/hologram edit {nombre} visibility {props['visibility']}")
+    return cmds
+
+def crear_holograma(nombre, props):
+    lineas = []
+    print("Escribe las líneas de texto del holograma (Enter vacío para terminar):")
+    while True:
+        linea = input(f"Línea {len(lineas)+1}: ")
+        if linea == "":
+            break
+        lineas.append(linea)
+    if not lineas:
+        print(" Debes escribir al menos una línea")
+        return None
+    return generar_comandos(nombre, lineas, props)
 
 def main():
-    hologramas = leer_hologramas()
-    if not hologramas:
-        print("No se encontraron hologramas válidos en holograma.json.")
-        return
-    print(f"Se encontraron {len(hologramas)} holograma(s):")
-    for i, holo in enumerate(hologramas, 1):
-        print(f"  {i}: nombre={holo.get('nombre')!r}, text={holo.get('text')!r}")
-    print("\nEn 4 segundos se comenzará el envío de comandos para todos los hologramas...")
-    time.sleep(4)
-    for holo in hologramas:
-        try:
-            comandos = construir_comandos(holo)
-        except Exception as e:
-            print(f"Error en holograma {holo}: {e}")
+    print("=== Generador de Hologramas Fancy automático ===")
+    time.sleep(1)
+
+    while True:
+        nombre = input("\nNombre del holograma: ").strip()
+        if not nombre:
+            print(" Debes ingresar un nombre válido")
             continue
-        print(f"\nComandos generados para '{holo.get('nombre')}':")
-        for c in comandos:
-            print(f"  {c}")
-        for cmd in comandos:
-            if not cmd.strip():
-                print("Comando vacío, se omite.")
-                continue
+
+        # Holograma principal
+        cmds = crear_holograma(nombre, PROPS_HOLO)
+        if not cmds:
+            continue
+        
+        print("\n--- Comandos generados ---")
+        for c in cmds:
+            print(c)
+
+        # Lore automático
+        lore = input(f"\n¿Quieres crear un holograma lore para '{nombre}'? (s/n): ").strip().lower()
+        if lore == "s":
+            nombre_lore = f"{nombre}_lore"
+            print(f"\nCreando holograma lore: {nombre_lore}")
+            cmds_lore = crear_holograma(nombre_lore, PROPS_LORE)
+            if cmds_lore:
+                print("\n--- Comandos generados para lore ---")
+                for c in cmds_lore:
+                    print(c)
+                cmds += cmds_lore
+
+        print("\nEn 3 segundos comenzará a pegarse en Minecraft...")
+        time.sleep(3)
+        for cmd in cmds:
             print(f"Enviando: {cmd}")
             enviar_comando(cmd)
-            time.sleep(0.5)
 
-if __name__ == '__main__':
-    try:
-        import pyperclip
-    except ImportError:
-        print("pyperclip no está instalado. Instalando automáticamente...")
-        import subprocess
-        subprocess.check_call(['pip', 'install', 'pyperclip'])
-        import pyperclip
-    main()
+        otra = input("\n¿Quieres crear otro holograma? (s/n): ").strip().lower()
+        if otra != "s":
+            print("\n🎉 Todos los hologramas enviados a Minecraft.")
+            break
+
+main()
