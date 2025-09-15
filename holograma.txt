@@ -1,7 +1,0 @@
-HoloEjemplo
-¡Bienvenido a mi servidor!
-100
-65
-200
-Steve
-Alex

@@ -1,2 +1,5 @@
-# Hologram_facy_script
-it is a script to create a hologram with the pl (FancyHologram)
+install python if you dont have it (microsoft Store)
+if you dont know type in console
+'python --version'
+'pip install pyautogui'
+to run the project just run vs
